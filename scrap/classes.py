@@ -1,3 +1,4 @@
+from email.policy import default
 import requests
 from bs4 import BeautifulSoup as bs
 import yaml
@@ -8,6 +9,7 @@ from time import sleep
 
 
 url = "http://factcheck.snu.ac.kr/v2/facts/%d"
+saving_path = "scrap/speakings.yaml"
 
 # 발언의 정보를 저장하는 클래스를 정의합니다.
 class Speaking:
@@ -95,88 +97,93 @@ class Speaking:
         return {id: {'score': score, 'date': date, 'time': time, 'content': content} for (id, score), (date, time, content) in zipped}
 
 
-# Speaking 객체를 스크래핑하는 함수를 정의합니다.
-def scrap_speaking(how_many:int = 4000, stop_when_errors_continued: int = 20) -> List[Speaking]:
-    speakings: List[Speaking] = []
-    errors: Set[int] = set()
-    continued_errors: int = 0
-    
-    for i in tqdm(range(1,how_many + 1)):
-        try:
-            speakings.append(Speaking(i))
-            continued_errors = 0
-        except:
-            errors.add(i)
-            continued_errors += 1
-            if continued_errors > stop_when_errors_continued:
-                print(f"{i}번째 페이지까지 스크래핑하는데 에러가 연속으로 {continued_errors}번 발생했습니다. 스크래핑을 중단합니다.")
-                break
-        if i % 10 == 0:
-            sleep(1)
-    print(f"업데이트된 데이터의 수는 {len(speakings)}/{how_many}개 입니다.")
-    return speakings
+    # Speaking 객체를 스크래핑하는 함수를 정의합니다.
+    @staticmethod
+    def scrap_speaking(how_many:int = 4000, stop_when_errors_continued: int = 20) -> List['Speaking']:
+        speakings: List[Speaking] = []
+        errors: Set[int] = set()
+        continued_errors: int = 0
+        
+        for i in tqdm(range(1,how_many + 1)):
+            try:
+                speakings.append(Speaking(i))
+                continued_errors = 0
+            except:
+                errors.add(i)
+                continued_errors += 1
+                if continued_errors > stop_when_errors_continued:
+                    print(f"{i}번째 페이지까지 스크래핑하는데 에러가 연속으로 {continued_errors}번 발생했습니다. 스크래핑을 중단합니다.")
+                    break
+            if i % 10 == 0:
+                sleep(1)
+        print(f"업데이트된 데이터의 수는 {len(speakings)}/{how_many}개 입니다.")
+        return speakings
 
 
-# 스크래핑한 Speaking 객체들의 데이터를 저장하는 함수를 정의합니다.
-def save_speaking(data: Any, file_name: str = 'speakings.yaml'):
-    if type(data) is not str:
-        yaml.dump(data, open(file_name, 'w', encoding="utf-8"), default_flow_style=False, allow_unicode=True)
-    else:
-        with open(file_name, 'w', encoding="utf-8") as f:
-            f.write(data)
+    # 스크래핑한 Speaking 객체들의 데이터를 저장하는 함수를 정의합니다.
+    @staticmethod
+    def save_speaking(data: Any, file_name: str = saving_path):
+        if type(data) is not str:
+            yaml.dump(data, open(file_name, 'w', encoding="utf-8"), default_flow_style=False, allow_unicode=True)
+        else:
+            with open(file_name, 'w', encoding="utf-8") as f:
+                f.write(data)
 
 
-# .yaml으로 저장했던 Speaking 객체들의 정보를 딕셔너리로 불러오는 함수를 정의합니다.
-def load_speakings_as_dict(file_name: str = 'speakings.yaml') -> Dict[Any, Any]:
-    speaks_dict = yaml.load(open(file_name, 'r', encoding="utf-8"), Loader=yaml.FullLoader)
-    if type(speaks_dict) is dict:
-        return speaks_dict
-    else:
-        raise TypeError(f"{file_name} 이 딕셔너리로 저장되지 않았습니다. 현재 저장된 타입은 {type(speaks_dict)} 입니다.")
+    # .yaml으로 저장했던 Speaking 객체들의 정보를 딕셔너리로 불러오는 함수를 정의합니다.
+    @staticmethod
+    def load_speakings_as_dict(file_name: str = saving_path) -> Dict[Any, Any]:
+        speaks_dict = yaml.load(open(file_name, 'r', encoding="utf-8"), Loader=yaml.FullLoader)
+        if type(speaks_dict) is dict:
+            return speaks_dict
+        else:
+            raise TypeError(f"{file_name} 이 딕셔너리로 저장되지 않았습니다. 현재 저장된 타입은 {type(speaks_dict)} 입니다.")
 
 
-# .yaml으로 저장했던 Speaking 객체들을 불러오는 함수를 정의합니다.
-def load_speakings(file_name: str = 'speakings.yaml') -> List[Speaking]:
-    speaks_dict = load_speakings_as_dict(file_name)
-    speakings = [Speaking(id, contents) for id, contents in speaks_dict.items()]
-    return speakings
+    # .yaml으로 저장했던 Speaking 객체들을 불러오는 함수를 정의합니다.
+    @staticmethod
+    def load_speakings(file_name: str = saving_path) -> List['Speaking']:
+        speaks_dict = Speaking.load_speakings_as_dict(file_name)
+        speakings = [Speaking(id, contents) for id, contents in speaks_dict.items()]
+        return speakings
 
 
-speakings: List[Speaking] = load_speakings()
-speaks_dict: Dict[Any, Any] = load_speakings_as_dict()
+    # 저장되어 있는 Speaking 데이터 베이스를 업데이트하는 함수를 정의합니다.
+    @staticmethod
+    def update_speakings(file_name: str = saving_path, how_many: int = 100, stop_when_errors_continued: int = 10):
+        from os.path import exists
+        # file_name 파일이 존재하면 파일을 로드하여 가장 큰 key 부터, 없으면 0부터 시작합니다.
+        if exists(file_name):
+            speaks_dict = Speaking.load_speakings_as_dict(file_name)
+            last_id =  max(speaks_dict.keys())
+        else:
+            speaks_dict = {}
+            last_id = 0
 
-# 저장되어 있는 Speaking 데이터 베이스를 업데이트하는 함수를 정의합니다.
-def update_speakings(file_name: str = 'speakings.yaml', how_many: int = 100, stop_when_errors_continued: int = 10):
-    from os.path import exists
-    # file_name 파일이 존재하면 파일을 로드하여 가장 큰 key 부터, 없으면 0부터 시작합니다.
-    if exists(file_name):
-        speaks_dict = load_speakings_as_dict(file_name)
-        last_id =  max(speaks_dict.keys())
-    else:
-        speaks_dict = {}
-        last_id = 0
+        speakings: Dict[int, Dict[Any, Any]] = {}
+        errors: Set[int] = set()
+        continued_errors = 0
+        
+        # last_id + 1 부터 최대 how_many 개의 
+        for i in tqdm(range(last_id + 1, last_id + how_many)):
+            try:
+                speakings[i] = Speaking(i).as_dict()
+                continued_errors = 0
+            except:
+                # speakings.append(None)
+                errors.add(i)
+                continued_errors += 1
+                if continued_errors >= stop_when_errors_continued:
+                    print(f"{i}번째 페이지까지 스크래핑하는데 에러가 연속으로 {continued_errors}번 발생했습니다. 스크래핑을 중단합니다.")
+                    break
+            if i % 10 == 0:
+                sleep(1)
+        if len(speakings) < 1:
+            print("업데이트된 데이터가 없습니다.")
+            return
+        print(f"업데이트된 데이터의 수는 {len(speakings)}/{how_many}개 입니다.")
+        speaks_dict.update(speakings)
+        Speaking.save_speaking(speaks_dict, file_name)
 
-    speakings: Dict[int, Dict[Any, Any]] = {}
-    errors: Set[int] = set()
-    continued_errors = 0
-    
-    # last_id + 1 부터 최대 how_many 개의 
-    for i in tqdm(range(last_id + 1, last_id + how_many)):
-        try:
-            speakings[i] = Speaking(i).as_dict()
-            continued_errors = 0
-        except:
-            # speakings.append(None)
-            errors.add(i)
-            continued_errors += 1
-            if continued_errors >= stop_when_errors_continued:
-                print(f"{i}번째 페이지까지 스크래핑하는데 에러가 연속으로 {continued_errors}번 발생했습니다. 스크래핑을 중단합니다.")
-                break
-        if i % 10 == 0:
-            sleep(1)
-    if len(speakings) < 1:
-        print("업데이트된 데이터가 없습니다.")
-        return
-    print(f"업데이트된 데이터의 수는 {len(speakings)}/{how_many}개 입니다.")
-    speaks_dict.update(speakings)
-    save_speaking(speakings, file_name)
+speakings: List[Speaking] = Speaking.load_speakings()
+speaks_dict: Dict[Any, Any] = Speaking.load_speakings_as_dict()
