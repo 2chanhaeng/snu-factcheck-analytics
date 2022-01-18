@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Set, Tuple, Union, Optional
 from tqdm import tqdm
 from time import sleep
 
+__all__ = ['Speaking', 'speakings', 'speaks_dict']
 
 url = "http://factcheck.snu.ac.kr/v2/facts/%d"
 saving_path = "scrap/speakings.yaml"
@@ -39,6 +40,34 @@ class Speaking:
             self.explain = predata['explain']
             self.factchecks = predata['factchecks']
     
+    def __dict__(self):
+        return {
+            'speacker': self.speacker,
+            'title': self.title,
+            'source': self.source,
+            'cartegories': self.cartegories,
+            'explain': self.explain,
+            'factchecks': self.factchecks
+        }
+
+    def check_key(self, key:str) -> None:
+        if type(key) is not str:
+            raise TypeError(f"{key} 는 문자열이 아닙니다.")
+        if key not in dict(self).keys():
+            raise KeyError(f"{key} 는 존재하지 않는 키입니다.")
+
+    def __getitem__(self, key:str) -> Any:
+        self.check_key(key)
+        return self.key
+    
+    def __setitem__(self, key:str, value:Any):
+        self.check_key(key)
+        self.key = value
+    
+    def __delitem__(self, key:str):
+        self.check_key(key)
+        self.key = None
+
     def as_dict(self): # 데이터를 딕셔너리 형태로 반환합니다.
         return {
             'speacker': self.speacker,
@@ -50,7 +79,7 @@ class Speaking:
         }
     
     def as_yaml(self): # 데이터를 yaml 형태로 반환합니다.
-        return yaml.dump(self.as_dict(), allow_unicode=True)
+        return yaml.dump(self.as_dict(), allow_unicode=True, Dumper=yaml.CDumper)
 
     def save_as_yaml(self, path:str):
         with open(path, 'w') as f:
@@ -133,7 +162,7 @@ class Speaking:
     # .yaml으로 저장했던 Speaking 객체들의 정보를 딕셔너리로 불러오는 함수를 정의합니다.
     @staticmethod
     def load_speakings_as_dict(file_name: str = saving_path) -> Dict[Any, Any]:
-        speaks_dict = yaml.load(open(file_name, 'r', encoding="utf-8"), Loader=yaml.FullLoader)
+        speaks_dict = yaml.load(open(file_name, 'r', encoding="utf-8"), Loader=yaml.CLoader)
         if type(speaks_dict) is dict:
             return speaks_dict
         else:
