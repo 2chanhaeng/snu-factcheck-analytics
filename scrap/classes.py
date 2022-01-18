@@ -23,29 +23,29 @@ class Speaking:
             self.soup = bs(self.responce.text, 'html.parser')\
                 # bs를 이용하여 구문 분석 후 soup에 저장합니다.
             self.detail = self.soup.select_one(".fcItem_detail_top") # 상세 페이지를 추출합니다.
-            self.speacker = self.detail.select_one(".name").text.strip() # 발언자를 추출합니다.
+            self.speaker = self.detail.select_one(".name").text.strip() # 발언자를 추출합니다.
             self.title = self.detail.select_one(".fcItem_detail_li_p > p:nth-child(1) > a").text.strip() # 제목을 추출합니다.
             self.source_element = self.detail.select_one(".source") # 출처가 담긴 html 요소를 추출합니다.
             self.source = {self.source_element.text.strip(): ""} \
                 if self.source_element.select_one("a") == None\
                 else {self.source_element.select_one("a").text.strip(): self.source_element.select_one("a")['href']} # 출처를 추출합니다.
-            self.cartegories = {li.text for li in self.detail.select(".fcItem_detail_bottom li")} # 카테고리를 추출합니다.
+            self.categories = {li.text for li in self.detail.select(".fcItem_detail_bottom li")} # 카테고리를 추출합니다.
             self.explain = self.soup.select_one(".exp").text.strip() # 설명을 추출합니다.
             self.factchecks = self.get_fc(self.soup)
         else:
-            self.speacker = predata['speacker']
+            self.speaker = predata['speaker']
             self.title = predata['title']
             self.source = predata['source']
-            self.cartegories = predata['cartegories']
+            self.categories = predata['categories']
             self.explain = predata['explain']
             self.factchecks = predata['factchecks']
     
     def __dict__(self):
         return {
-            'speacker': self.speacker,
+            'speaker': self.speaker,
             'title': self.title,
             'source': self.source,
-            'cartegories': self.cartegories,
+            'categories': self.categories,
             'explain': self.explain,
             'factchecks': self.factchecks
         }
@@ -70,10 +70,10 @@ class Speaking:
 
     def as_dict(self): # 데이터를 딕셔너리 형태로 반환합니다.
         return {
-            'speacker': self.speacker,
+            'speaker': self.speaker,
             'title': self.title,
             'source': self.source,
-            'cartegories': self.cartegories,
+            'categories': self.categories,
             'explain': self.explain,
             'factchecks': self.factchecks
         }
@@ -151,9 +151,9 @@ class Speaking:
 
     # 스크래핑한 Speaking 객체들의 데이터를 저장하는 함수를 정의합니다.
     @staticmethod
-    def save_speaking(data: Any, file_name: str = saving_path):
+    def save_speakings(data: Any, file_name: str = saving_path):
         if type(data) is not str:
-            yaml.dump(data, open(file_name, 'w', encoding="utf-8"), default_flow_style=False, allow_unicode=True)
+            yaml.dump(data, open(file_name, 'w', encoding="utf-8"), default_flow_style=False, allow_unicode=True, Dumper=yaml.CDumper)
         else:
             with open(file_name, 'w', encoding="utf-8") as f:
                 f.write(data)
