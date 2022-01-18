@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Set, Tuple, Union, Optional
 from tqdm import tqdm
 from time import sleep
 
+__all__ = ['Speaking', 'speakings', 'speaks_dict']
 
 url = "http://factcheck.snu.ac.kr/v2/facts/%d"
 saving_path = "scrap/speakings.yaml"
@@ -22,37 +23,63 @@ class Speaking:
             self.soup = bs(self.responce.text, 'html.parser')\
                 # bs를 이용하여 구문 분석 후 soup에 저장합니다.
             self.detail = self.soup.select_one(".fcItem_detail_top") # 상세 페이지를 추출합니다.
-            self.speacker = self.detail.select_one(".name").text.strip() # 발언자를 추출합니다.
+            self.speaker = self.detail.select_one(".name").text.strip() # 발언자를 추출합니다.
             self.title = self.detail.select_one(".fcItem_detail_li_p > p:nth-child(1) > a").text.strip() # 제목을 추출합니다.
             self.source_element = self.detail.select_one(".source") # 출처가 담긴 html 요소를 추출합니다.
             self.source = {self.source_element.text.strip(): ""} \
                 if self.source_element.select_one("a") == None\
                 else {self.source_element.select_one("a").text.strip(): self.source_element.select_one("a")['href']} # 출처를 추출합니다.
-            self.cartegories = {li.text for li in self.detail.select(".fcItem_detail_bottom li")} # 카테고리를 추출합니다.
+            self.categories = {li.text for li in self.detail.select(".fcItem_detail_bottom li")} # 카테고리를 추출합니다.
             self.explain = self.soup.select_one(".exp").text.strip() # 설명을 추출합니다.
             self.factchecks = self.get_fc(self.soup)
         else: # 기존 데이터를 로드해서 객체를 다시 생성합니다.
             self.speacker = predata['speacker']
             self.title = predata['title']
             self.source = predata['source']
-            self.cartegories = predata['cartegories']
+            self.categories = predata['categories']
             self.explain = predata['explain']
             self.factchecks = predata['factchecks']
     
-    
-    def as_dict(self): # 데이터를 딕셔너리 형태로 반환합니다.
+    def __dict__(self):
         return {
-            'speacker': self.speacker,
+            'speaker': self.speaker,
             'title': self.title,
             'source': self.source,
-            'cartegories': self.cartegories,
+            'categories': self.categories,
+            'explain': self.explain,
+            'factchecks': self.factchecks
+        }
+
+    def check_key(self, key:str) -> None:
+        if type(key) is not str:
+            raise TypeError(f"{key} 는 문자열이 아닙니다.")
+        if key not in dict(self).keys():
+            raise KeyError(f"{key} 는 존재하지 않는 키입니다.")
+
+    def __getitem__(self, key:str) -> Any:
+        self.check_key(key)
+        return self.key
+    
+    def __setitem__(self, key:str, value:Any):
+        self.check_key(key)
+        self.key = value
+    
+    def __delitem__(self, key:str):
+        self.check_key(key)
+        self.key = None
+
+    def as_dict(self): # 데이터를 딕셔너리 형태로 반환합니다.
+        return {
+            'speaker': self.speaker,
+            'title': self.title,
+            'source': self.source,
+            'categories': self.categories,
             'explain': self.explain,
             'factchecks': self.factchecks
         }
     
-
-    def as_yaml(self): # 데이터를 yaml 형태로 변환합니다.
-        return yaml.dump(self.as_dict(), allow_unicode=True)
+    def as_yaml(self): # 데이터를 yaml 형태로 반환합니다.
+        return yaml.dump(self.as_dict(), allow_unicode=True, Dumper=yaml.CDumper)
 
 
     def save_as_yaml(self, path:str): # 데이터를 yaml 형태로 저장합니다.
@@ -123,10 +150,11 @@ class Speaking:
 
     # 스크래핑한 Speaking 객체들의 데이터를 저장하는 함수를 정의합니다.
     @staticmethod
-    def save_speaking(data: Any, file_name: str = saving_path):
+
+    def save_speakings(data: Any, file_name: str = saving_path):
         if type(data) is not str: # 데이터가 문자열이 아니면 yaml 형식으로 변환합니다.
-            yaml.dump(data, open(file_name, 'w', encoding="utf-8"), default_flow_style=False, allow_unicode=True)
-        else: # 데이터가 문자열이면 그대로 저장합니다.
+            yaml.dump(data, open(file_name, 'w', encoding="utf-8"), default_flow_style=False, allow_unicode=True, Dumper=yaml.CDumper)
+        else:
             with open(file_name, 'w', encoding="utf-8") as f:
                 f.write(data)
 
@@ -134,7 +162,7 @@ class Speaking:
     # .yaml으로 저장했던 Speaking 객체들의 정보를 딕셔너리로 불러오는 함수를 정의합니다.
     @staticmethod
     def load_speakings_as_dict(file_name: str = saving_path) -> Dict[Any, Any]:
-        speaks_dict = yaml.load(open(file_name, 'r', encoding="utf-8"), Loader=yaml.FullLoader)
+        speaks_dict = yaml.load(open(file_name, 'r', encoding="utf-8"), Loader=yaml.CLoader)
         if type(speaks_dict) is dict: # 불러온 데이터가 딕셔너리면 그대로 반환합니다.
             return speaks_dict
         else: # 불러온 데이터가 딕셔너리가 아니면 에러를 발생시킵니다.
