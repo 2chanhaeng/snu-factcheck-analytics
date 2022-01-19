@@ -33,7 +33,7 @@ class Speaking:
             self.explain = self.soup.select_one(".exp").text.strip() # 설명을 추출합니다.
             self.factchecks = self.get_fc(self.soup)
         else: # 기존 데이터를 로드해서 객체를 다시 생성합니다.
-            self.speacker = predata['speacker']
+            self.speaker = predata['speaker']
             self.title = predata['title']
             self.source = predata['source']
             self.categories = predata['categories']
