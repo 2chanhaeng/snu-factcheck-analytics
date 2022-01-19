@@ -11,12 +11,17 @@ __all__ = ['Speaking', 'speakings', 'speaks_dict']
 
 url = "http://factcheck.snu.ac.kr/v2/facts/%d"
 saving_path = "scrap/speakings.yaml"
-try:
+
+try: # yaml 패키지에 CLoader, CDumper 가 존재하면 기본 로더, 덤프로 사용하고,
     default_yaml_loader = yaml.CLoader
     default_yaml_dumper = yaml.CDumper
-except AttributeError:
-    default_yaml_loader = yaml.FullLoader
-    default_yaml_dumper = yaml.FullDumper
+except AttributeError: # 없으면 FullLoader, FullDumper 를 기본 로더, 덤프를 사용합니다.
+    try:
+        default_yaml_loader = yaml.FullLoader
+        default_yaml_dumper = yaml.FullDumper
+    except AttributeError: # 그마저도 없으면 SafeLoader, SafeDumper 를 기본 로더, 덤프를 사용합니다.
+        default_yaml_loader = yaml.SafeLoader
+        default_yaml_dumper = yaml.SafeDumper
 
 
 # 발언의 정보를 저장하는 클래스를 정의합니다.
