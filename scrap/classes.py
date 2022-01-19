@@ -11,6 +11,13 @@ __all__ = ['Speaking', 'speakings', 'speaks_dict']
 
 url = "http://factcheck.snu.ac.kr/v2/facts/%d"
 saving_path = "scrap/speakings.yaml"
+try:
+    default_yaml_loader = yaml.CLoader
+    default_yaml_dumper = yaml.CDumper
+except AttributeError:
+    default_yaml_loader = yaml.FullLoader
+    default_yaml_dumper = yaml.FullDumper
+
 
 # 발언의 정보를 저장하는 클래스를 정의합니다.
 class Speaking:
@@ -79,7 +86,7 @@ class Speaking:
         }
     
     def as_yaml(self): # 데이터를 yaml 형태로 반환합니다.
-        return yaml.dump(self.as_dict(), allow_unicode=True, Dumper=yaml.CDumper)
+        return yaml.dump(self.as_dict(), allow_unicode=True, Dumper=default_yaml_dumper)
 
 
     def save_as_yaml(self, path:str): # 데이터를 yaml 형태로 저장합니다.
@@ -153,7 +160,7 @@ class Speaking:
 
     def save_speakings(data: Any, file_name: str = saving_path):
         if type(data) is not str: # 데이터가 문자열이 아니면 yaml 형식으로 변환합니다.
-            yaml.dump(data, open(file_name, 'w', encoding="utf-8"), default_flow_style=False, allow_unicode=True, Dumper=yaml.CDumper)
+            yaml.dump(data, open(file_name, 'w', encoding="utf-8"), default_flow_style=False, allow_unicode=True, Dumper=default_yaml_dumper)
         else:
             with open(file_name, 'w', encoding="utf-8") as f:
                 f.write(data)
@@ -162,7 +169,7 @@ class Speaking:
     # .yaml으로 저장했던 Speaking 객체들의 정보를 딕셔너리로 불러오는 함수를 정의합니다.
     @staticmethod
     def load_speakings_as_dict(file_name: str = saving_path) -> Dict[Any, Any]:
-        speaks_dict = yaml.load(open(file_name, 'r', encoding="utf-8"), Loader=yaml.CLoader)
+        speaks_dict = yaml.load(open(file_name, 'r', encoding="utf-8"), Loader=default_yaml_loader)
         if type(speaks_dict) is dict: # 불러온 데이터가 딕셔너리면 그대로 반환합니다.
             return speaks_dict
         else: # 불러온 데이터가 딕셔너리가 아니면 에러를 발생시킵니다.
