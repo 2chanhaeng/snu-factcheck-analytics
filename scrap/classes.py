@@ -10,7 +10,7 @@ from time import sleep
 __all__ = ['Speaking', 'speakings', 'speaks_dict']
 
 url = "http://factcheck.snu.ac.kr/v2/facts/%d"
-saving_path = "scrap/speakings.yaml"
+speaks_saving_path = "data/speakings.yaml"
 
 try: # yaml 패키지에 CLoader, CDumper 가 존재하면 기본 로더, 덤프로 사용하고,
     default_yaml_loader = yaml.CLoader
@@ -163,7 +163,7 @@ class Speaking:
     # 스크래핑한 Speaking 객체들의 데이터를 저장하는 함수를 정의합니다.
     @staticmethod
 
-    def save_speakings(data: Any, file_name: str = saving_path):
+    def save_speakings(data: Any, file_name: str = speaks_saving_path):
         if type(data) is not str: # 데이터가 문자열이 아니면 yaml 형식으로 변환합니다.
             yaml.dump(data, open(file_name, 'w', encoding="utf-8"), default_flow_style=False, allow_unicode=True, Dumper=default_yaml_dumper)
         else:
@@ -173,7 +173,7 @@ class Speaking:
 
     # .yaml으로 저장했던 Speaking 객체들의 정보를 딕셔너리로 불러오는 함수를 정의합니다.
     @staticmethod
-    def load_speakings_as_dict(file_name: str = saving_path) -> Dict[Any, Any]:
+    def load_speakings_as_dict(file_name: str = speaks_saving_path) -> Dict[Any, Any]:
         speaks_dict = yaml.load(open(file_name, 'r', encoding="utf-8"), Loader=default_yaml_loader)
         if type(speaks_dict) is dict: # 불러온 데이터가 딕셔너리면 그대로 반환합니다.
             return speaks_dict
@@ -183,7 +183,7 @@ class Speaking:
 
     # .yaml으로 저장했던 Speaking 객체들을 불러오는 함수를 정의합니다.
     @staticmethod
-    def load_speakings(file_name: str = saving_path) -> List['Speaking']:
+    def load_speakings(file_name: str = speaks_saving_path) -> List['Speaking']:
         speaks_dict = Speaking.load_speakings_as_dict(file_name)
         speakings = [Speaking(id, contents) for id, contents in speaks_dict.items()]
         return speakings
@@ -191,7 +191,7 @@ class Speaking:
 
     # 저장되어 있는 Speaking 데이터 베이스를 업데이트하는 함수를 정의합니다.
     @staticmethod
-    def update_speakings(file_name: str = saving_path, how_many: int = 100, stop_when_errors_continued: int = 10):
+    def update_speakings(file_name: str = speaks_saving_path, how_many: int = 100, stop_when_errors_continued: int = 10):
         # file_name 파일이 존재하면 파일을 로드하여 가장 큰 key 부터, 없으면 0부터 시작합니다.
         from os.path import exists
         if exists(file_name):
