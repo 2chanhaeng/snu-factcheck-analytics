@@ -39,7 +39,7 @@ class Speaking:
                 else {self.source_element.select_one("a").text.strip(): self.source_element.select_one("a")['href']} # 출처를 추출합니다.
             self.categories = {li.text for li in self.detail.select(".fcItem_detail_bottom li")} # 카테고리를 추출합니다.
             self.explain = self.soup.select_one(".exp").text.strip() # 설명을 추출합니다.
-            self.factchecks = self.get_fc(self.soup)
+            self.factchecks = self.get_fc()
         else: # 기존 데이터를 로드해서 객체를 다시 생성합니다.
             self.speaker = predata['speaker']
             self.title = predata['title']
@@ -102,33 +102,37 @@ class Speaking:
     id_score_re = re.compile(r'(?<=showScore\()\d+, \d+')
 
     # 아이디와 점수를 추출하는 함수를 정의합니다.
-    def get_fc_id_score(self, soup:bs) -> List[Tuple[int, int]]:
-        id_score: List[Tuple[int,int]] = [] # 아이디와 점수를 저장할 리스트
-        for fc_item_script in soup.select(".fcItem_vf > ul > script"): # 팩트 체크 아이템의 스크립트를 찾습니다.
+    def get_fc_id_score(self) -> List[Dict[str, int]]:
+        id_scores: List[Dict[str,int]] = [] # 아이디와 점수를 저장할 리스트입니다.
+        for fc_item_script in self.soup.select(".fcItem_vf > ul > script"): # 팩트 체크 아이템의 스크립트를 찾습니다.
+            id_score: Dict[str, int] = {} # 아이디와 점수를 저장할 딕셔너리입니다.
             id_score_str: str = Speaking.id_score_re.search(fc_item_script.text).group() # 정규 표현식으로 아이디와 점수값을 담은 문자열을 추출합니다.
             id_score_int: Tuple = tuple(map(int, id_score_str.split(', '))) # 문자열을 정수로 변환합니다.
-            id_score.append(id_score_int)
-        return id_score
+            id_score['id'], id_score['score'] = id_score_int # 아이디와 점수를 추출합니다.
+            id_scores.append(id_score) # 아이디와 점수를 리스트에 추가합니다.
+        return id_scores
 
 
     # 작성 시간과 내용을 추출하는 함수를 정의합니다.
-    def get_fc_time_contents(self, soup:bs) -> List[Tuple[str, str, str]]:
-        time_contents: List[str] = [] # 시간과 내용을 저장할 리스트
-        for fc_item in soup.select(".fcItem_vf > ul > li"): # 팩트 체크 아이템을 찾습니다.
-            date = fc_item.select_one(".reg_date > p i:nth-child(1)").text # 작성 날짜를 추출합니다.
-            time = fc_item.select_one(".reg_date > p i:nth-child(2)").text # 작성 시간을 추출합니다.
+    def get_fc_time_contents(self) -> List[Dict[str, str]]:
+        time_contents: List[Dict[str, str]] = [] # 시간과 내용을 저장할 리스트
+        for fc_item in self.soup.select(".fcItem_vf_li"): # 팩트 체크 아이템을 찾습니다.
+            time_content: Dict[str, str] = {} # 시간과 내용을 저장할 딕셔너리
+            time_content['date'] = fc_item.select_one(".reg_date > p i:nth-child(1)").text # 작성 날짜를 추출합니다.
+            time_content['time'] = fc_item.select_one(".reg_date > p i:nth-child(2)").text # 작성 시간을 추출합니다.
             raw_content = fc_item.select_one(".vf_exp_wrap").text # 팩트 체크 내용을 추출합니다.
-            content = re.sub(r'\s{2,}', " ", raw_content.strip()) # 공백을 제거합니다.
-            time_contents.append((date, time, content))
+            time_content['content'] = re.sub(r'\s{2,}', " ", raw_content.strip()) # 공백을 제거합니다.
+            time_content['checked_by'] = fc_item.select_one(".checked_by img").attrs['src'] #.split(".")[-2].split("_")[2] # 팩트 체크 인증자를 추출합니다.
+            time_contents.append(time_content)
         return time_contents
 
 
     # 위의 함수들의 반환을 합쳐 최종적으로 아이디를 키로 갖고 나머지 내용을 값으로 갖는 딕셔너리를 반환하는 함수를 정의합니다.
-    def get_fc(self, soup:bs) -> Dict[int, Dict[Any, Any]]:
-        id_score = self.get_fc_id_score(soup) # 아이디와 점수를 추출합니다.
-        time_contents = self.get_fc_time_contents(soup) # 작성 시간과 내용을 추출합니다.
+    def get_fc(self) -> Dict[int, Dict[Any, Any]]:
+        id_score = self.get_fc_id_score() # 아이디와 점수를 추출합니다.
+        time_contents = self.get_fc_time_contents() # 작성 시간과 내용을 추출합니다.
         zipped = zip(id_score, time_contents) # 두 리스트를 합쳐 쌍을 생성합니다.
-        return {id: {'score': score, 'date': date, 'time': time, 'content': content} for (id, score), (date, time, content) in zipped}
+        return {ids.pop('id'): ids | tc for ids, tc in zipped} # 아이디와 쌍을 합쳐 딕셔너리로 반환합니다.
 
 
     # Speaking 객체를 스크래핑하는 함수를 정의합니다.
@@ -158,7 +162,6 @@ class Speaking:
 
     # 스크래핑한 Speaking 객체들의 데이터를 저장하는 함수를 정의합니다.
     @staticmethod
-
     def save_speakings(data: Any, file_name: str = speaks_saving_path):
         if type(data) is not str: # 데이터가 문자열이 아니면 yaml 형식으로 변환합니다.
             yaml.dump(data, open(file_name, 'w', encoding="utf-8"), default_flow_style=False, allow_unicode=True, Dumper=default_yaml_dumper)
