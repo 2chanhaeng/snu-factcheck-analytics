@@ -7,7 +7,7 @@ from typing import List, Dict, Any, Set, Tuple, Union, Optional
 from tqdm import tqdm
 from time import sleep
 import os
-import datetime
+from datetime import datetime
 
 __all__ = ['Speaking', 'speakings', 'speaks_dict']
 
