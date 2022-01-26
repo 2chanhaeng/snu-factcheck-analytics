@@ -115,3 +115,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# etc
+data/content_word.csv
