@@ -30,3 +30,8 @@ https://s3.ap-northeast-2.amazonaws.com/elasticbeanstalk-ap-northeast-2-04403025
 https://s3.ap-northeast-2.amazonaws.com/elasticbeanstalk-ap-northeast-2-044030252423/public/uploads/press/logo_image/37/banner_%EC%A0%9C%EB%AA%A9_%EC%97%86%EC%9D%8C2.png 파이낸셜뉴스
 https://s3.ap-northeast-2.amazonaws.com/elasticbeanstalk-ap-northeast-2-044030252423/public/uploads/press/logo_image/17/banner_chosun.png 조선일보
 https://s3.ap-northeast-2.amazonaws.com/elasticbeanstalk-ap-northeast-2-044030252423/public/uploads/press/logo_image/10/banner_tvchosun.png TV조선
+https://s3.ap-northeast-2.amazonaws.com/elasticbeanstalk-ap-northeast-2-044030252423/public/uploads/press/logo_image/33/banner_KakaoTalk_Photo_2019-11-06-15-36-11.png 한겨레
+https://s3.ap-northeast-2.amazonaws.com/elasticbeanstalk-ap-northeast-2-044030252423/public/uploads/press/logo_image/7/banner_%E1%84%80%E1%85%AE%E1%86%A8%E1%84%86%E1%85%B5%E1%86%AB%E1%84%8B%E1%85%B5%E1%86%AF%E1%84%87%E1%85%A9_logo.png 국민일보
+https://s3.ap-northeast-2.amazonaws.com/elasticbeanstalk-ap-northeast-2-044030252423/public/uploads/press/logo_image/12/banner_2.png 동아일보
+https://s3.ap-northeast-2.amazonaws.com/elasticbeanstalk-ap-northeast-2-044030252423/public/uploads/press/logo_image/34/banner_%EC%8B%9C%EC%82%AC%EC%A0%80%EB%84%90_%EB%A1%9C%EA%B3%A01.png 시사저널
+https://s3.ap-northeast-2.amazonaws.com/elasticbeanstalk-ap-northeast-2-044030252423/public/uploads/press/logo_image/24/banner_%E1%84%85%E1%85%A9%E1%84%80%E1%85%A9_%E1%84%92%E1%85%A1%E1%86%AB%E1%84%80%E1%85%B3%E1%86%AF.png 동아사이언스
