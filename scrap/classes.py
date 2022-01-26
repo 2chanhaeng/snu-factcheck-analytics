@@ -6,6 +6,8 @@ import re
 from typing import List, Dict, Any, Set, Tuple, Union, Optional
 from tqdm import tqdm
 from time import sleep
+import os
+import datetime
 
 __all__ = ['Speaking', 'speakings', 'speaks_dict']
 
@@ -138,7 +140,7 @@ class Speaking:
 
     # Speaking 객체를 스크래핑하는 함수를 정의합니다.
     @staticmethod
-    def scrap_speaking(how_many:int = 4000, stop_when_errors_continued: int = 20) -> List['Speaking']:
+    def scrap_speaking(how_many:int = 4000, stop_when_errors_continued: int = 20, saving_path: Union[None, str] = None) -> List['Speaking']:
         speakings: List[Speaking] = []
         errors: Set[int] = set()
         continued_errors: int = 0 # 연속된 에러가 발생한 횟수를 저장합니다.
@@ -158,12 +160,31 @@ class Speaking:
                     print(f"{i}번째 페이지까지 스크래핑하는데 에러가 연속으로 {continued_errors}번 발생했습니다. 스크래핑을 중단합니다.")
                     break
         print(f"업데이트된 데이터의 수는 {len(speakings)}/{how_many}개 입니다.")
+        if saving_path:
+            try:
+                speaks_dict = {s.num: s.as_dict() for s in speakings}
+                Speaking.save_speakings(speaks_dict, saving_path)
+            except Exception as e:
+                print(e)
         return speakings
 
 
     # 스크래핑한 Speaking 객체들의 데이터를 저장하는 함수를 정의합니다.
     @staticmethod
     def save_speakings(data: Any, file_name: str = speaks_saving_path):
+        if os.path.isfile(file_name):
+            if input("파일이 존재합니다. 다른 이름으로 저장할까요?  'y', 'Y', '' else None : ") in ('y', 'Y', ''):
+                file_name = file_name.split('.')[:-1] + str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')) + '.' + file_name.split('.')[-1]
+            elif input("덮어쓸까요?  'y', 'Y', '' else None : ") in ('y', 'Y', ''):
+                pass
+            elif input("반환할까요?  'y', 'Y', '' else None : ") in ('y', 'Y', ''):
+                return data
+            else:
+                print('파일이 저장되지 않았습니다.')
+                return
+        else:
+            with open(file_name, 'w', encoding="utf-8") as f:
+                f.write('\n')
         if type(data) is not str: # 데이터가 문자열이 아니면 yaml 형식으로 변환합니다.
             yaml.dump(data, open(file_name, 'w', encoding="utf-8"), default_flow_style=False, allow_unicode=True, Dumper=default_yaml_dumper)
         else:
