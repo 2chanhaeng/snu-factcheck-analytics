@@ -122,8 +122,9 @@ class Speaking:
             time_content['time'] = fc_item.select_one(".reg_date > p i:nth-child(2)").text # 작성 시간을 추출합니다.
             raw_content = fc_item.select_one(".vf_exp_wrap").text # 팩트 체크 내용을 추출합니다.
             time_content['content'] = re.sub(r'\s{2,}', " ", raw_content.strip()) # 공백을 제거합니다.
-            time_content['checked_by'] = fc_item.select_one(".checked_by img").attrs['src'] #.split(".")[-2].split("_")[2] # 팩트 체크 인증자를 추출합니다.
-            time_contents.append(time_content)
+            pub_logo_url = fc_item.select_one(".checked_by img").attrs['src'] #.split(".")[-2].split("_")[2] # 팩트 체크한 신문사의 로고 주소를 추출합니다..
+            time_content['checked_by'] = get_pub_name(pub_logo_url) # 신문사 이름을 추출합니다.
+        time_contents.append(time_content)    
         return time_contents
 
 
@@ -224,6 +225,41 @@ class Speaking:
         print(f"업데이트된 데이터의 수는 {len(speakings)}/{how_many}개 입니다.")
         speaks_dict.update(speakings)
         Speaking.save_speaking(speaks_dict, file_name)
+
+
+pub_raw_saving_path = 'data/pub_raw_set.txt'
+pub_table_saving_path = 'data/pub_table.txt'
+
+pub_raw_set = set()
+with open(pub_raw_saving_path, 'r', encoding="utf-8") as f:
+    for line in f:
+        pub_raw_set.add(line.strip())
+
+pub_table = {}
+with open(pub_table_saving_path, 'r', encoding="utf-8") as f:
+    for line in f:
+        raw, real = line.strip().split(' ')
+        pub_table[raw] = real
+
+
+def add_to_pub_raw(pub: str) -> None:
+    pub_raw_set.add(pub)
+    with open(pub_raw_saving_path, 'a', encoding="utf-8") as f:
+        f.write(pub + '\n')
+
+
+def translate_pub_name(pub_name: str, pub_table:Dict[str,str] = pub_table) -> str:
+    return pub_table[pub_name] if pub_name in pub_table else pub_name
+
+
+def get_pub_name(pub_logo_url: str, pub_table:Dict[str,str] = pub_table) -> str:
+    try:
+        pub_raw = pub_logo_url.split(".")[-2].split("_")[2] # 팩트 체크 인증자를 추출합니다.
+    except:
+        pub_raw = pub_logo_url
+    add_to_pub_raw(pub_raw) if pub_raw not in pub_raw_set else None
+    return translate_pub_name(pub_raw, pub_table)
+
 
 speakings: List[Speaking] = Speaking.load_speakings()
 speaks_dict: Dict[Any, Any] = Speaking.load_speakings_as_dict()
