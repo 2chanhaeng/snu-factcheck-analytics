@@ -124,7 +124,7 @@ class Speaking:
             time_content['content'] = re.sub(r'\s{2,}', " ", raw_content.strip()) # 공백을 제거합니다.
             pub_logo_url = fc_item.select_one(".checked_by img").attrs['src'] #.split(".")[-2].split("_")[2] # 팩트 체크한 신문사의 로고 주소를 추출합니다..
             time_content['checked_by'] = get_pub_name(pub_logo_url) # 신문사 이름을 추출합니다.
-        time_contents.append(time_content)    
+            time_contents.append(time_content)
         return time_contents
 
 
