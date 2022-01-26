@@ -34,7 +34,7 @@ class Speaking:
                 # bs를 이용하여 구문 분석 후 soup에 저장합니다.
             self.detail = self.soup.select_one(".fcItem_detail_top") # 상세 페이지를 추출합니다.
             self.speaker = self.detail.select_one(".name").text.strip() # 발언자를 추출합니다.
-            self.title = self.detail.select_one(".fcItem_detail_li_p > p:nth-child(1) > a").text.strip() # 제목을 추출합니다.
+            self.title = self.detail.select_one(".fcItem_detail_li_p > p:nth-of-type(1) > a").text.strip() # 제목을 추출합니다.
             self.source_element = self.detail.select_one(".source") # 출처가 담긴 html 요소를 추출합니다.
             self.source = {self.source_element.text.strip(): ""} \
                 if self.source_element.select_one("a") == None\
@@ -120,12 +120,12 @@ class Speaking:
         time_contents: List[Dict[str, str]] = [] # 시간과 내용을 저장할 리스트
         for fc_item in self.soup.select(".fcItem_vf_li"): # 팩트 체크 아이템을 찾습니다.
             time_content: Dict[str, str] = {} # 시간과 내용을 저장할 딕셔너리
-            time_content['date'] = fc_item.select_one(".reg_date > p i:nth-child(1)").text # 작성 날짜를 추출합니다.
-            time_content['time'] = fc_item.select_one(".reg_date > p i:nth-child(2)").text # 작성 시간을 추출합니다.
+            time_content['date'] = fc_item.select_one(".reg_date > p i:nth-of-type(1)").text # 작성 날짜를 추출합니다.
+            time_content['time'] = fc_item.select_one(".reg_date > p i:nth-of-type(2)").text # 작성 시간을 추출합니다.
             raw_content = fc_item.select_one(".vf_exp_wrap").text # 팩트 체크 내용을 추출합니다.
             time_content['content'] = re.sub(r'\s{2,}', " ", raw_content.strip()) # 공백을 제거합니다.
             pub_logo_url = fc_item.select_one(".checked_by img").attrs['src'] #.split(".")[-2].split("_")[2] # 팩트 체크한 신문사의 로고 주소를 추출합니다..
-            time_content['checked_by'] = get_pub_name(pub_logo_url) # 신문사 이름을 추출합니다.
+            time_content['checked_by'] = translate_pub_name(pub_logo_url) # 신문사 이름을 추출합니다.
             time_contents.append(time_content)
         return time_contents
 
@@ -144,7 +144,6 @@ class Speaking:
         speakings: List[Speaking] = []
         errors: Set[int] = set()
         continued_errors: int = 0 # 연속된 에러가 발생한 횟수를 저장합니다.
-        
         for i in tqdm(range(1,how_many + 1)):
             try:
                 speakings.append(Speaking(i))
@@ -164,8 +163,8 @@ class Speaking:
             try:
                 speaks_dict = {s.num: s.as_dict() for s in speakings}
                 Speaking.save_speakings(speaks_dict, saving_path)
-            except Exception as e:
-                print(e)
+            except:
+                pass
         return speakings
 
 
@@ -173,18 +172,7 @@ class Speaking:
     @staticmethod
     def save_speakings(data: Any, file_name: str = speaks_saving_path):
         if os.path.isfile(file_name):
-            if input("파일이 존재합니다. 다른 이름으로 저장할까요?  'y', 'Y', '' else None : ") in ('y', 'Y', ''):
-                file_name = file_name.split('.')[:-1] + str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')) + '.' + file_name.split('.')[-1]
-            elif input("덮어쓸까요?  'y', 'Y', '' else None : ") in ('y', 'Y', ''):
-                pass
-            elif input("반환할까요?  'y', 'Y', '' else None : ") in ('y', 'Y', ''):
-                return data
-            else:
-                print('파일이 저장되지 않았습니다.')
-                return
-        else:
-            with open(file_name, 'w', encoding="utf-8") as f:
-                f.write('\n')
+            file_name = file_name.split('.')[0] + str(datetime.now().strftime('_%Y%m%d_%H%M%S')) + '.' + file_name.split('.')[1]
         if type(data) is not str: # 데이터가 문자열이 아니면 yaml 형식으로 변환합니다.
             yaml.dump(data, open(file_name, 'w', encoding="utf-8"), default_flow_style=False, allow_unicode=True, Dumper=default_yaml_dumper)
         else:
@@ -248,13 +236,7 @@ class Speaking:
         Speaking.save_speaking(speaks_dict, file_name)
 
 
-pub_raw_saving_path = 'data/pub_raw_set.txt'
 pub_table_saving_path = 'data/pub_table.txt'
-
-pub_raw_set = set()
-with open(pub_raw_saving_path, 'r', encoding="utf-8") as f:
-    for line in f:
-        pub_raw_set.add(line.strip())
 
 pub_table = {}
 with open(pub_table_saving_path, 'r', encoding="utf-8") as f:
@@ -262,24 +244,15 @@ with open(pub_table_saving_path, 'r', encoding="utf-8") as f:
         raw, real = line.strip().split(' ')
         pub_table[raw] = real
 
-
-def add_to_pub_raw(pub: str) -> None:
-    pub_raw_set.add(pub)
-    with open(pub_raw_saving_path, 'a', encoding="utf-8") as f:
-        f.write(pub + '\n')
-
-
-def translate_pub_name(pub_name: str, pub_table:Dict[str,str] = pub_table) -> str:
-    return pub_table[pub_name] if pub_name in pub_table else pub_name
+def add_to_pub_table(pub_url: str) -> None:
+    pub_table[pub_url] = pub_url
+    with open(pub_table_saving_path, 'a', encoding='utf-8') as f:
+        f.write(f"{pub_url} {pub_url}\n")
+    return pub_url
 
 
-def get_pub_name(pub_logo_url: str, pub_table:Dict[str,str] = pub_table) -> str:
-    try:
-        pub_raw = pub_logo_url.split(".")[-2].split("_")[2] # 팩트 체크 인증자를 추출합니다.
-    except:
-        pub_raw = pub_logo_url
-    add_to_pub_raw(pub_raw) if pub_raw not in pub_raw_set else None
-    return translate_pub_name(pub_raw, pub_table)
+def translate_pub_name(pub_url: str, pub_table:Dict[str,str] = pub_table) -> str:
+    return pub_table[pub_url] if pub_url in pub_table else add_to_pub_table(pub_url)
 
 
 speakings: List[Speaking] = Speaking.load_speakings()
